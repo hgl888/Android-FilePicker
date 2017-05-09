@@ -12,6 +12,7 @@ import android.widget.TextView;
 
 import java.util.List;
 
+import droidninja.filepicker.FilePickerConst;
 import droidninja.filepicker.PickerManager;
 import droidninja.filepicker.R;
 import droidninja.filepicker.models.Document;
@@ -41,16 +42,17 @@ public class FileListAdapter extends SelectableAdapter<FileListAdapter.FileViewH
     public void onBindViewHolder(final FileViewHolder holder, int position) {
         final Document document = getItems().get(position);
 
-        holder.imageView.setImageResource(document.getTypeDrawable());
+        holder.imageView.setImageResource(document.getFileType().getDrawable());
         holder.fileNameTextView.setText(document.getTitle());
         holder.fileSizeTextView.setText(Formatter.formatShortFileSize(context, Long.parseLong(document.getSize())));
 
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(holder.checkBox.isChecked() || PickerManager.getInstance().shouldAdd()) {
-                    holder.checkBox.setChecked(!holder.checkBox.isChecked(), true);
-                }
+                if(PickerManager.getInstance().getMaxCount()==1)
+                    PickerManager.getInstance().add(document.getPath(), FilePickerConst.FILE_TYPE_DOCUMENT);
+                else
+                    onItemClicked(document,holder);
             }
         });
 
@@ -59,9 +61,7 @@ public class FileListAdapter extends SelectableAdapter<FileListAdapter.FileViewH
         holder.checkBox.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(holder.checkBox.isChecked() || PickerManager.getInstance().shouldAdd()) {
-                    holder.checkBox.setChecked(!holder.checkBox.isChecked(), true);
-                }
+                onItemClicked(document,holder);
             }
         });
 
@@ -69,6 +69,7 @@ public class FileListAdapter extends SelectableAdapter<FileListAdapter.FileViewH
         holder.checkBox.setChecked(isSelected(document));
 
         holder.itemView.setBackgroundResource(isSelected(document)?R.color.bg_gray:android.R.color.white);
+        holder.checkBox.setVisibility(isSelected(document) ? View.VISIBLE : View.GONE);
 
         holder.checkBox.setOnCheckedChangeListener(new SmoothCheckBox.OnCheckedChangeListener() {
             @Override
@@ -76,12 +77,23 @@ public class FileListAdapter extends SelectableAdapter<FileListAdapter.FileViewH
                 toggleSelection(document);
                 holder.itemView.setBackgroundResource(isChecked?R.color.bg_gray:android.R.color.white);
 
-                if(isChecked)
-                    PickerManager.getInstance().add(document);
-                else
-                    PickerManager.getInstance().remove(document);
             }
         });
+    }
+
+    private void onItemClicked(Document document, FileViewHolder holder)
+    {
+        if(holder.checkBox.isChecked()) {
+            holder.checkBox.setChecked(!holder.checkBox.isChecked(), true);
+            holder.checkBox.setVisibility(View.GONE);
+            PickerManager.getInstance().remove(document.getPath(),FilePickerConst.FILE_TYPE_DOCUMENT);
+        }
+        else if(PickerManager.getInstance().shouldAdd())
+        {
+            holder.checkBox.setChecked(!holder.checkBox.isChecked(), true);
+            holder.checkBox.setVisibility(View.VISIBLE);
+            PickerManager.getInstance().add(document.getPath(), FilePickerConst.FILE_TYPE_DOCUMENT);
+        }
     }
 
     @Override
